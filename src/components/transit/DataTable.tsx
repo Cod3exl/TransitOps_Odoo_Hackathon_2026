@@ -1,5 +1,5 @@
 import { cn } from "@/lib/utils";
-import type { ReactNode, ThHTMLAttributes, TdHTMLAttributes } from "react";
+import type { HTMLAttributes, ReactNode, ThHTMLAttributes, TdHTMLAttributes } from "react";
 
 export function TableCard({ children, className }: { children: ReactNode; className?: string }) {
   return (
@@ -45,7 +45,7 @@ export function Td({
   );
 }
 
-export function Tr({ className, muted, ...props }: React.HTMLAttributes<HTMLTableRowElement> & { muted?: boolean }) {
+export function Tr({ className, muted, ...props }: HTMLAttributes<HTMLTableRowElement> & { muted?: boolean }) {
   return (
     <tr
       className={cn(
