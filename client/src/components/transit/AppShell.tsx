@@ -3,15 +3,17 @@ import { LogOut } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { navForRole, ROLE_LABELS } from "@/lib/transit/rbac";
 import { useSession } from "@/lib/transit/session";
+import { useSettings } from "@/lib/useApi";
 import { LogoMark } from "./Logo";
 import type { ReactNode } from "react";
 
 export function AppShell({ children }: { children: ReactNode }) {
   const { session, signOut } = useSession();
+  const { data: settingsData } = useSettings();
   const pathname = useRouterState({ select: (s) => s.location.pathname });
 
   if (!session) return null;
-  const items = navForRole(session.role);
+  const items = navForRole(session.role, settingsData?.rbacConfig);
 
   return (
     <div className="flex min-h-screen w-full">

@@ -5,6 +5,7 @@ import { tripsRouter } from "./routes/trips";
 import { dashboardRouter } from "./routes/dashboard";
 import { fuelExpensesRouter } from "./routes/fuelExpenses";
 import { reportsRouter } from "./routes/reports";
+import { settingsRouter } from "./routes/settings";
 import { vehiclesRouter } from "./routes/vehicles";
 import { driversRouter } from "./routes/drivers";
 import { maintenanceRouter } from "./routes/maintenance";
@@ -21,6 +22,7 @@ export function createApp() {
   app.use("/dashboard", dashboardRouter);
   app.use("/", fuelExpensesRouter); // exposes /fuel-logs, /expenses, /operational-cost
   app.use("/reports", reportsRouter);
+  app.use("/settings", settingsRouter);
 
   app.use("/vehicles", vehiclesRouter);
   app.use("/drivers", driversRouter);

@@ -281,3 +281,50 @@ export function useAddExpense() {
     onSuccess: () => qc.invalidateQueries({ queryKey: ["expenses"] }),
   });
 }
+
+// ──────────────────────────────────────────────
+// Reports
+// ──────────────────────────────────────────────
+
+export function useVehicleCosts() {
+  return useQuery({
+    queryKey: ["reports", "vehicle-costs"],
+    queryFn: () => api.get<any[]>("/reports/vehicle-costs"),
+  });
+}
+
+export function useMonthlyRevenue() {
+  return useQuery({
+    queryKey: ["reports", "monthly-revenue"],
+    queryFn: () => api.get<{ month: string; revenue: number; trips: number }[]>("/reports/monthly-revenue"),
+  });
+}
+
+export function useTopCostliest(limit = 5) {
+  return useQuery({
+    queryKey: ["reports", "top-costliest", limit],
+    queryFn: () => api.get<any[]>(`/reports/top-costliest?limit=${limit}`),
+  });
+}
+
+// ──────────────────────────────────────────────
+// Settings
+// ──────────────────────────────────────────────
+
+export function useSettings() {
+  return useQuery({
+    queryKey: ["settings"],
+    queryFn: () => api.get<{ depotName: string; currency: string; distanceUnit: string; rbacConfig: any }>("/settings"),
+  });
+}
+
+export function useUpdateSettings() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (body: { depotName: string; currency: string; distanceUnit: string; rbacConfig?: any }) =>
+      api.patch<{ depotName: string; currency: string; distanceUnit: string; rbacConfig: any }>("/settings", body),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["settings"] });
+    },
+  });
+}

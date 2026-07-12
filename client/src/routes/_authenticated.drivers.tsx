@@ -34,7 +34,7 @@ const inputCls =
   "h-9 w-full rounded-md border bg-card px-3 text-sm outline-none focus:ring-2 focus:ring-ring";
 const labelCls = "mb-1 block text-xs font-medium text-muted-foreground";
 
-const TODAY = "2026-07-12";
+const today = new Date().toISOString().split("T")[0];
 
 function SafetyScore({ score }: { score: number }) {
   const tone =
@@ -159,7 +159,7 @@ function DriversPage() {
             </thead>
             <tbody>
               {filtered.map((d) => {
-                const expired = d.licenseExpiry < TODAY;
+                const expired = d.licenseExpiry < today;
                 return (
                   <Tr key={d.id}>
                     <Td className="font-medium">{d.name}</Td>

@@ -9,10 +9,10 @@ import {
   Tooltip,
   ResponsiveContainer,
 } from "recharts";
-import { useFleet } from "@/lib/transit/store";
-import { MONTHLY_REVENUE, COSTLIEST_VEHICLES } from "@/lib/transit/seed";
+import { useVehicleCosts, useMonthlyRevenue, useTopCostliest, useVehicles } from "@/lib/useApi";
 import { PageHeader, SecondaryButton } from "@/components/transit/PageHeader";
 import { KpiCard } from "@/components/transit/KpiCard";
+import { PendingComponent } from "@/components/transit/PendingComponent";
 
 export const Route = createFileRoute("/_authenticated/reports")({
   head: () => ({
@@ -24,10 +24,10 @@ export const Route = createFileRoute("/_authenticated/reports")({
   component: ReportsPage,
 });
 
-function exportCsv() {
+function exportCsv(data: { month: string; revenue: number }[]) {
   const rows = [
     ["Month", "Revenue"],
-    ...MONTHLY_REVENUE.map((m) => [m.month, String(m.revenue)]),
+    ...data.map((m) => [m.month, String(m.revenue)]),
   ];
   const csv = rows.map((r) => r.join(",")).join("\n");
   const blob = new Blob([csv], { type: "text/csv" });
@@ -40,22 +40,35 @@ function exportCsv() {
 }
 
 function ReportsPage() {
-  const { vehicles, fuelLogs, services } = useFleet();
+  const { data: vehicleCosts, isLoading: isCostsLoading } = useVehicleCosts();
+  const { data: monthlyRevenue, isLoading: isRevLoading } = useMonthlyRevenue();
+  const { data: topCostliest, isLoading: isTopLoading } = useTopCostliest();
+  const { data: vehicles, isLoading: isVehiclesLoading } = useVehicles();
 
-  const totalFuelCost = fuelLogs.reduce((s, f) => s + f.cost, 0);
-  const totalMaintenance = services.reduce((s, x) => s + x.cost, 0);
-  const operationalCost = totalFuelCost + totalMaintenance;
-  const totalLiters = fuelLogs.reduce((s, f) => s + f.liters, 0);
-  const fuelEfficiency = totalLiters ? (18450 / totalLiters).toFixed(1) : "—";
-  const activeVehicles = vehicles.filter((v) => v.status !== "retired").length;
+  if (isCostsLoading || isRevLoading || isTopLoading || isVehiclesLoading) {
+    return <PendingComponent />;
+  }
+
+  const vCosts = vehicleCosts ?? [];
+  const mRevenue = monthlyRevenue ?? [];
+  const costliest = topCostliest ?? [];
+  const vList = vehicles ?? [];
+
+  const operationalCost = vCosts.reduce((s, c) => s + (c.operationalCost || 0), 0);
+  const totalDistance = vCosts.reduce((s, c) => s + (c.distanceKm || 0), 0);
+  const totalLiters = vCosts.reduce((s, c) => s + (c.fuelEfficiency ? c.distanceKm / c.fuelEfficiency : 0), 0);
+  const fuelEfficiency = totalLiters > 0 ? (totalDistance / totalLiters).toFixed(1) : "—";
+  
+  const activeVehicles = vList.filter((v) => v.status !== "retired").length;
   const utilization = Math.round(
-    (vehicles.filter((v) => v.status === "on_trip").length / Math.max(activeVehicles, 1)) * 100,
+    (vList.filter((v) => v.status === "on_trip").length / Math.max(activeVehicles, 1)) * 100,
   );
-  const annualRevenue = MONTHLY_REVENUE.reduce((s, m) => s + m.revenue, 0);
-  const totalAcquisition = vehicles.reduce((s, v) => s + v.acquisitionCost, 0);
-  const roi = Math.round(((annualRevenue - operationalCost) / totalAcquisition) * 100);
+  
+  const annualRevenue = vCosts.reduce((s, c) => s + (c.revenue || 0), 0);
+  const totalAcquisition = vList.reduce((s, v) => s + (v.acquisitionCost || 0), 0);
+  const roi = totalAcquisition > 0 ? Math.round(((annualRevenue - operationalCost) / totalAcquisition) * 100) : 0;
 
-  const maxCost = Math.max(...COSTLIEST_VEHICLES.map((c) => c.cost));
+  const maxCost = Math.max(...costliest.map((c) => c.operationalCost || 0), 1);
 
   return (
     <div>
@@ -63,19 +76,19 @@ function ReportsPage() {
         title="Reports & Analytics"
         subtitle="Read-only fleet performance overview"
         action={
-          <SecondaryButton onClick={exportCsv}>
+          <SecondaryButton onClick={() => exportCsv(mRevenue)}>
             <Download className="size-4" /> Export CSV
           </SecondaryButton>
         }
       />
 
       <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
-        <KpiCard label="Fuel Efficiency" value={`${fuelEfficiency} km/l`} accent="green" trend="up" context="+0.4 vs last month" />
-        <KpiCard label="Fleet Utilization" value={`${utilization}%`} accent="blue" trend="up" context="+6 pts vs last month" />
-        <KpiCard label="Operational Cost" value={`$${operationalCost.toLocaleString()}`} accent="amber" trend="down" context="fuel + maintenance, MTD" />
-        <KpiCard label="Vehicle ROI" value={`${roi}%`} accent="gray" trend="up" context="trailing 12 months">
+        <KpiCard label="Fuel Efficiency" value={fuelEfficiency === "—" ? "—" : `${fuelEfficiency} km/l`} accent="green" trend="up" context="Fleet average" />
+        <KpiCard label="Fleet Utilization" value={`${utilization}%`} accent="blue" trend="up" context="Current active dispatch" />
+        <KpiCard label="Operational Cost" value={`$${Math.round(operationalCost).toLocaleString()}`} accent="amber" trend="down" context="fuel + maintenance + expenses" />
+        <KpiCard label="Vehicle ROI" value={`${roi}%`} accent="gray" trend="up" context="lifetime">
           <p className="mt-2 text-[10px] leading-snug text-muted-foreground">
-            ROI = (Revenue − (Maintenance + Fuel)) / Acquisition Cost
+            ROI = (Revenue − Operational Cost) / Acquisition Cost
           </p>
         </KpiCard>
       </div>
@@ -85,7 +98,7 @@ function ReportsPage() {
           <h2 className="mb-4 text-sm font-semibold">Monthly Revenue</h2>
           <div className="h-64">
             <ResponsiveContainer width="100%" height="100%">
-              <BarChart data={MONTHLY_REVENUE} margin={{ top: 4, right: 4, left: -12, bottom: 0 }}>
+              <BarChart data={mRevenue} margin={{ top: 4, right: 4, left: -12, bottom: 0 }}>
                 <CartesianGrid strokeDasharray="3 3" stroke="var(--border)" vertical={false} />
                 <XAxis dataKey="month" tick={{ fontSize: 11 }} axisLine={false} tickLine={false} />
                 <YAxis
@@ -107,31 +120,35 @@ function ReportsPage() {
         <div className="rounded-lg border bg-card p-5 shadow-sm">
           <h2 className="mb-4 text-sm font-semibold">Top Costliest Vehicles</h2>
           <ul className="space-y-4">
-            {COSTLIEST_VEHICLES.map((c, i) => {
-              const pct = (c.cost / maxCost) * 100;
-              // red → amber gradient by rank
-              const hue = 25 + i * 12;
-              return (
-                <li key={c.vehicleId}>
-                  <div className="mb-1 flex items-baseline justify-between gap-2 text-sm">
-                    <span className="font-medium">
-                      {c.name}{" "}
-                      <span className="font-mono text-xs text-muted-foreground">{c.registration}</span>
-                    </span>
-                    <span className="font-semibold tabular-nums">${c.cost.toLocaleString()}</span>
-                  </div>
-                  <div className="h-2 overflow-hidden rounded-full bg-secondary">
-                    <div
-                      className="h-full rounded-full"
-                      style={{
-                        width: `${pct}%`,
-                        background: `oklch(0.6 0.16 ${hue})`,
-                      }}
-                    />
-                  </div>
-                </li>
-              );
-            })}
+            {costliest.length === 0 ? (
+               <li className="text-sm text-muted-foreground">No cost data available.</li>
+            ) : (
+              costliest.map((c, i) => {
+                const pct = ((c.operationalCost || 0) / maxCost) * 100;
+                // red → amber gradient by rank
+                const hue = 25 + i * 12;
+                return (
+                  <li key={c.id}>
+                    <div className="mb-1 flex items-baseline justify-between gap-2 text-sm">
+                      <span className="font-medium">
+                        {c.nameModel}{" "}
+                        <span className="font-mono text-xs text-muted-foreground">{c.registrationNumber}</span>
+                      </span>
+                      <span className="font-semibold tabular-nums">${Math.round(c.operationalCost || 0).toLocaleString()}</span>
+                    </div>
+                    <div className="h-2 overflow-hidden rounded-full bg-secondary">
+                      <div
+                        className="h-full rounded-full"
+                        style={{
+                          width: `${pct}%`,
+                          background: `oklch(0.6 0.16 ${hue})`,
+                        }}
+                      />
+                    </div>
+                  </li>
+                );
+              })
+            )}
           </ul>
         </div>
       </div>

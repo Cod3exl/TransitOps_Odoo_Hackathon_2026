@@ -88,6 +88,7 @@ export const ROLE_ACCESS: Record<Role, Record<string, Access>> = {
   },
 };
 
-export function navForRole(role: Role): NavItem[] {
-  return NAV_ITEMS.filter((item) => ROLE_ACCESS[role][item.to] !== "none");
+export function navForRole(role: Role, dynamicConfig?: Record<Role, Record<string, Access>>): NavItem[] {
+  const config = dynamicConfig || ROLE_ACCESS;
+  return NAV_ITEMS.filter((item) => config[role]?.[item.to] !== "none");
 }

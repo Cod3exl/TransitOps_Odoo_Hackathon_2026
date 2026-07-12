@@ -1,9 +1,11 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { createFileRoute } from "@tanstack/react-router";
 import { Check, Eye, Minus } from "lucide-react";
 import { PageHeader, PrimaryButton } from "@/components/transit/PageHeader";
 import { ROLE_ACCESS, ROLE_LABELS, type Access } from "@/lib/transit/rbac";
 import type { Role } from "@/lib/transit/types";
+import { useSettings, useUpdateSettings } from "@/lib/useApi";
+import { PendingComponent } from "@/components/transit/PendingComponent";
 
 export const Route = createFileRoute("/_authenticated/settings")({
   head: () => ({
@@ -52,10 +54,43 @@ function AccessIcon({ access }: { access: Access }) {
 function SettingsPage() {
   const [saved, setSaved] = useState(false);
   const [general, setGeneral] = useState({
-    depot: "Rotterdam Central Depot",
-    currency: "USD ($)",
-    unit: "Kilometers",
+    depot: "",
+    currency: "",
+    unit: "",
   });
+  const [rbac, setRbac] = useState<Record<Role, Record<string, Access>>>(ROLE_ACCESS);
+
+  const { data: settingsData, isLoading } = useSettings();
+  const updateSettings = useUpdateSettings();
+
+  useEffect(() => {
+    if (settingsData) {
+      setGeneral({
+        depot: settingsData.depotName,
+        currency: settingsData.currency,
+        unit: settingsData.distanceUnit,
+      });
+      if (settingsData.rbacConfig) {
+        setRbac(settingsData.rbacConfig);
+      }
+    }
+  }, [settingsData]);
+
+  const handleSave = () => {
+    updateSettings.mutate({
+      depotName: general.depot,
+      currency: general.currency,
+      distanceUnit: general.unit,
+      rbacConfig: rbac,
+    }, {
+      onSuccess: () => {
+        setSaved(true);
+        window.setTimeout(() => setSaved(false), 2000);
+      }
+    });
+  };
+
+  if (isLoading) return <PendingComponent />;
 
   return (
     <div>
@@ -112,7 +147,19 @@ function SettingsPage() {
                     <td className="px-4 py-3.5 font-medium">{ROLE_LABELS[role]}</td>
                     {SECTIONS.map((s) => (
                       <td key={s.key} className="px-4 py-3.5 text-center">
-                        <AccessIcon access={ROLE_ACCESS[role][s.key]} />
+                        <button
+                          onClick={() => {
+                            const current = rbac[role][s.key];
+                            const next: Access = current === "full" ? "view" : current === "view" ? "none" : "full";
+                            setRbac((prev) => ({
+                              ...prev,
+                              [role]: { ...prev[role], [s.key]: next },
+                            }));
+                          }}
+                          className="hover:opacity-75 transition-opacity"
+                        >
+                          <AccessIcon access={rbac[role][s.key]} />
+                        </button>
                       </td>
                     ))}
                   </tr>
@@ -136,13 +183,8 @@ function SettingsPage() {
 
       <div className="mt-5 flex items-center justify-end gap-3">
         {saved && <span className="text-xs text-status-green">Changes saved</span>}
-        <PrimaryButton
-          onClick={() => {
-            setSaved(true);
-            window.setTimeout(() => setSaved(false), 2000);
-          }}
-        >
-          Save changes
+        <PrimaryButton onClick={handleSave} disabled={updateSettings.isPending}>
+          {updateSettings.isPending ? "Saving..." : "Save changes"}
         </PrimaryButton>
       </div>
     </div>

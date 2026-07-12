@@ -147,3 +147,12 @@ model Expense {
   notes       String?
   createdAt   DateTime @default(now())
 }
+
+model SystemSettings {
+  id           String   @id @default("default")
+  depotName    String   @default("Rotterdam Central Depot")
+  currency     String   @default("USD ($)")
+  distanceUnit String   @default("Kilometers")
+  rbacConfig   Json?
+  updatedAt    DateTime @updatedAt
+}
