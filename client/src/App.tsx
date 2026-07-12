@@ -5,6 +5,7 @@ import Login from "./pages/Login";
 import Dashboard from "./pages/Dashboard";
 import FuelExpenses from "./pages/FuelExpenses";
 import Reports from "./pages/Reports";
+import Dispatcher from "./pages/Dispatcher";
 import Placeholder from "./pages/Placeholder";
 
 export default function App() {
@@ -31,8 +32,16 @@ export default function App() {
           }
         />
 
+        <Route
+          path="/dispatch"
+          element={
+            <ProtectedRoute roles={["dispatcher", "fleet_manager"]}>
+              <Dispatcher />
+            </ProtectedRoute>
+          }
+        />
+
         {/* Teammate slices — placeholders until their pages land */}
-        <Route path="/dispatch" element={<Placeholder title="Dispatch" owner="Member A" />} />
         <Route path="/vehicles" element={<Placeholder title="Vehicles" owner="Member B" />} />
         <Route path="/drivers" element={<Placeholder title="Drivers" owner="Member B" />} />
         <Route path="/maintenance" element={<Placeholder title="Maintenance" owner="Member B" />} />
