@@ -1,0 +1,15 @@
+services:
+  postgres:
+    image: postgres:16
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: transitops
+      POSTGRES_USER: transitops
+      POSTGRES_PASSWORD: transitops
+    ports:
+      - "5433:5432"
+    volumes:
+      - transitops_pgdata:/var/lib/postgresql/data
+
+volumes:
+  transitops_pgdata:

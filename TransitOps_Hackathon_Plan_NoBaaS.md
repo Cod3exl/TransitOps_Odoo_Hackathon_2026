@@ -1,3 +1,4 @@
+
 # TransitOps — 8-Hour Hackathon Plan (no backend-as-a-service)
 
 This replaces the Supabase-based version with a self-written **Node/Express + PostgreSQL + Prisma + JWT** backend. Same database design, same business rules, same winning strategy (section 1 of the original doc still applies in full) — only the infrastructure layer changes.

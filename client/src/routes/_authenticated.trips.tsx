@@ -1,0 +1,274 @@
+import { useMemo, useState, type FormEvent } from "react";
+import { createFileRoute } from "@tanstack/react-router";
+import { ArrowRight, Check, OctagonX, Send, Download } from "lucide-react";
+import { cn, exportCsv } from "@/lib/utils";
+import { useVehicles, useDrivers, useTrips, useDispatchTrip, useCompleteTrip, useCancelTrip } from "@/lib/useApi";
+import { PageHeader, PrimaryButton, SecondaryButton } from "@/components/transit/PageHeader";
+import { StatusChip } from "@/components/transit/StatusChip";
+import { RuleNote } from "@/components/transit/RuleNote";
+import { PendingComponent } from "@/components/transit/PendingComponent";
+
+export const Route = createFileRoute("/_authenticated/trips")({
+  head: () => ({
+    meta: [
+      { title: "Trip Dispatcher — TransitOps" },
+      { name: "description", content: "Create, dispatch and track trips with capacity validation and a live board." },
+    ],
+  }),
+  component: TripsPage,
+});
+
+const inputCls =
+  "h-9 w-full rounded-md border bg-card px-3 text-sm outline-none focus:ring-2 focus:ring-ring";
+const labelCls = "mb-1 block text-xs font-medium text-muted-foreground";
+
+
+const STAGES = ["Draft", "Dispatched", "Completed", "Cancelled"] as const;
+
+function Stepper({ current }: { current: number }) {
+  return (
+    <ol className="flex flex-wrap items-center gap-1.5">
+      {STAGES.map((stage, i) => (
+        <li key={stage} className="flex items-center gap-1.5">
+          <span
+            className={cn(
+              "flex items-center gap-1.5 rounded-full border px-2.5 py-1 text-xs font-medium",
+              i < current && "border-status-green/40 bg-status-green-soft text-status-green",
+              i === current && "border-primary bg-accent text-accent-foreground",
+              i > current && "bg-card text-muted-foreground",
+            )}
+          >
+            {i < current && <Check className="size-3" />}
+            {stage}
+          </span>
+          {i < STAGES.length - 1 && <ArrowRight className="size-3.5 text-muted-foreground/50" />}
+        </li>
+      ))}
+    </ol>
+  );
+}
+
+function TripsPage() {
+  const { data: vehicles = [], isLoading: vLoad } = useVehicles();
+  const { data: drivers = [], isLoading: dLoad } = useDrivers();
+  const { data: trips = [], isLoading: tLoad } = useTrips();
+  const dispatchMutation = useDispatchTrip();
+  const completeMutation = useCompleteTrip();
+  const cancelMutation = useCancelTrip();
+
+  const today = new Date().toISOString().split("T")[0];
+  const [form, setForm] = useState({
+    source: "",
+    destination: "",
+    vehicleId: "",
+    driverId: "",
+    cargoWeightKg: "",
+    plannedDistanceKm: "",
+    revenue: "",
+  });
+
+  const availableVehicles = vehicles.filter((v) => v.status === "available");
+  const availableDrivers = drivers.filter(
+    (d) => d.status === "available" && d.licenseExpiry >= today,
+  );
+
+  const selectedVehicle = vehicles.find((v) => v.id === form.vehicleId);
+  const cargo = Number(form.cargoWeightKg) || 0;
+  const overCapacity =
+    !!selectedVehicle && cargo > 0 && cargo > selectedVehicle.maxCapacityKg;
+  const excess = selectedVehicle ? cargo - selectedVehicle.maxCapacityKg : 0;
+
+  const canDispatch =
+    form.source.trim() &&
+    form.destination.trim() &&
+    form.vehicleId &&
+    form.driverId &&
+    cargo > 0 &&
+    !overCapacity;
+
+  const liveTrips = useMemo(
+    () => trips.filter((t) =>
+        ["draft", "dispatched", "in_progress", "cancelled"].includes(t.status),
+      ),
+    [trips],
+  );
+
+  const vehicleLabel = (id: string | null) => vehicles.find((v) => v.id === id)?.name;
+  const driverLabel = (id: string | null) => drivers.find((d) => d.id === id)?.name;
+
+  const handleSubmit = (e: FormEvent) => {
+    e.preventDefault();
+    if (!canDispatch) return;
+    dispatchMutation.mutate({
+      source: form.source.trim(),
+      destination: form.destination.trim(),
+      vehicleId: form.vehicleId,
+      driverId: form.driverId,
+      cargoWeightKg: cargo,
+      plannedDistanceKm: Number(form.plannedDistanceKm) || 0,
+      revenue: Number(form.revenue) || 0,
+    }, {
+      onSuccess: () => setForm({ source: "", destination: "", vehicleId: "", driverId: "", cargoWeightKg: "", plannedDistanceKm: "", revenue: "" }),
+    });
+  };
+
+  if (vLoad || dLoad || tLoad) return <PendingComponent />;
+
+  return (
+    <div>
+      <PageHeader
+        title="Trip Dispatcher"
+        subtitle="Create trips and monitor the live board"
+        action={
+          <SecondaryButton
+            onClick={() => exportCsv(trips, "trips.csv", [
+              { key: "tripCode", label: "Trip Code" },
+              { key: "source", label: "Source" },
+              { key: "destination", label: "Destination" },
+              { key: "vehicleId", label: "Vehicle ID" },
+              { key: "driverId", label: "Driver ID" },
+              { key: "status", label: "Status" },
+            ])}
+          >
+            <Download className="size-4" /> Export CSV
+          </SecondaryButton>
+        }
+      />
+
+      <div className="grid gap-4 lg:grid-cols-[minmax(0,11fr)_minmax(0,9fr)]">
+        {/* Create Trip */}
+        <div className="rounded-lg border bg-card p-5 shadow-sm">
+          <div className="mb-4">
+            <Stepper current={0} />
+          </div>
+          <h2 className="mb-3 text-sm font-semibold">Create Trip</h2>
+          <form onSubmit={handleSubmit} className="space-y-4">
+            <div className="grid gap-3 sm:grid-cols-2">
+              <div>
+                <label className={labelCls}>Source</label>
+                <input className={inputCls} value={form.source} onChange={(e) => setForm({ ...form, source: e.target.value })} placeholder="Mumbai Depot" />
+              </div>
+              <div>
+                <label className={labelCls}>Destination</label>
+                <input className={inputCls} value={form.destination} onChange={(e) => setForm({ ...form, destination: e.target.value })} placeholder="Delhi Hub" />
+              </div>
+            </div>
+            <div className="grid gap-3 sm:grid-cols-2">
+              <div>
+                <label className={labelCls}>Vehicle (available only)</label>
+                <select className={inputCls} value={form.vehicleId} onChange={(e) => setForm({ ...form, vehicleId: e.target.value })}>
+                  <option value="">Select vehicle…</option>
+                  {availableVehicles.map((v) => (
+                    <option key={v.id} value={v.id}>
+                      {v.name} · {v.maxCapacityKg.toLocaleString()} kg max
+                    </option>
+                  ))}
+                </select>
+              </div>
+              <div>
+                <label className={labelCls}>Driver (available only)</label>
+                <select className={inputCls} value={form.driverId} onChange={(e) => setForm({ ...form, driverId: e.target.value })}>
+                  <option value="">Select driver…</option>
+                  {availableDrivers.map((d) => (
+                    <option key={d.id} value={d.id}>{d.name}</option>
+                  ))}
+                </select>
+              </div>
+            </div>
+            <div className="grid gap-3 sm:grid-cols-2">
+              <div>
+                <label className={labelCls}>Cargo Weight (kg)</label>
+                <input
+                  type="number"
+                  className={cn(inputCls, overCapacity && "border-status-red focus:ring-status-red")}
+                  value={form.cargoWeightKg}
+                  onChange={(e) => setForm({ ...form, cargoWeightKg: e.target.value })}
+                  placeholder="12000"
+                />
+              </div>
+              <div>
+                <label className={labelCls}>Planned Distance (km)</label>
+                <input type="number" className={inputCls} value={form.plannedDistanceKm} onChange={(e) => setForm({ ...form, plannedDistanceKm: e.target.value })} placeholder="480" />
+              </div>
+            </div>
+
+            {overCapacity && selectedVehicle && (
+              <div className="rounded-md border border-status-red bg-status-red-soft px-3 py-2.5 text-sm text-status-red">
+                <p className="font-semibold">Capacity exceeded — dispatch blocked</p>
+                <p className="mt-0.5 text-xs">
+                  Vehicle capacity {selectedVehicle.maxCapacityKg.toLocaleString()} kg / Cargo
+                  weight {cargo.toLocaleString()} kg — exceeded by {excess.toLocaleString()} kg.
+                </p>
+              </div>
+            )}
+
+            <div>
+              <label className={labelCls}>Expected Revenue (₹)</label>
+              <input
+                type="number"
+                className={inputCls}
+                value={form.revenue}
+                onChange={(e) => setForm({ ...form, revenue: e.target.value })}
+                placeholder="12000"
+              />
+            </div>
+
+            <PrimaryButton type="submit" disabled={!canDispatch} className="w-full">
+              <Send className="size-4" /> Dispatch Trip
+            </PrimaryButton>
+          </form>
+        </div>
+
+        {/* Live Board */}
+        <div>
+          <h2 className="mb-2 text-sm font-semibold">Live Board</h2>
+          <div className="space-y-2.5">
+            {liveTrips.map((t) => {
+              const cancelled = t.status === "cancelled";
+              return (
+                <div
+                  key={t.id}
+                  className={cn(
+                    "rounded-lg border bg-card p-3.5 shadow-sm",
+                    cancelled && "opacity-60",
+                    t.status === "draft" && "border-dashed",
+                  )}
+                >
+                  <div className="flex items-center justify-between gap-2">
+                    <span className="font-mono text-xs font-semibold">{t.tripCode}</span>
+                    <StatusChip status={t.status} />
+                  </div>
+                  <p className={cn("mt-1.5 flex items-center gap-1.5 text-sm font-medium", cancelled && "line-through")}>
+                    {t.source} <ArrowRight className="size-3.5 text-muted-foreground" /> {t.destination}
+                  </p>
+                  <p className="mt-1 text-xs text-muted-foreground">
+                    {t.vehicle
+                      ? `${t.vehicle.nameModel} · ${t.driver?.name ?? "Unassigned"}`
+                      : (t.vehicleId ? `${vehicleLabel(t.vehicleId) ?? t.vehicleId} · ${driverLabel(t.driverId) ?? "Unassigned"}` : "Unassigned")}
+                  </p>
+                  {(t.status === "dispatched" || t.status === "in_progress") && (
+                    <div className="mt-2.5 flex gap-2">
+                      <SecondaryButton onClick={() => completeMutation.mutate({ id: t.id, actualDistanceKm: t.plannedDistanceKm, fuelConsumedL: 0 })} className="h-7 px-2.5 text-xs">
+                        <Check className="size-3.5 text-status-green" /> Complete
+                      </SecondaryButton>
+                      <SecondaryButton onClick={() => cancelMutation.mutate(t.id)} className="h-7 border-status-red/40 px-2.5 text-xs text-status-red">
+                        <OctagonX className="size-3.5" /> Cancel
+                      </SecondaryButton>
+                    </div>
+                  )}
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      </div>
+
+      <div className="mt-5 border-t pt-3">
+        <RuleNote>
+          Completing a trip automatically returns its vehicle and driver to{" "}
+          <strong>Available</strong>.
+        </RuleNote>
+      </div>
+    </div>
+  );
+}
