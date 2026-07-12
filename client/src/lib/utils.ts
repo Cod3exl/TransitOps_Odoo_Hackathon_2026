@@ -7,7 +7,7 @@ export function cn(...inputs: ClassValue[]) {
 }
 
 /** Generic CSV export — works with any array of flat objects. */
-export function exportCsv<T extends Record<string, unknown>>(
+export function exportCsv<T extends Record<string, any>>(
   data: T[],
   filename: string,
   columns?: { key: keyof T; label: string }[],
