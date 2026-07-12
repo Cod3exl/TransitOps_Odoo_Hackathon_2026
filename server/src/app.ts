@@ -5,6 +5,9 @@ import { tripsRouter } from "./routes/trips";
 import { dashboardRouter } from "./routes/dashboard";
 import { fuelExpensesRouter } from "./routes/fuelExpenses";
 import { reportsRouter } from "./routes/reports";
+import { vehiclesRouter } from "./routes/vehicles";
+import { driversRouter } from "./routes/drivers";
+import { maintenanceRouter } from "./routes/maintenance";
 
 export function createApp() {
   const app = express();
@@ -19,10 +22,9 @@ export function createApp() {
   app.use("/", fuelExpensesRouter); // exposes /fuel-logs, /expenses, /operational-cost
   app.use("/reports", reportsRouter);
 
-  // Teammates mount their routers here:
-  // app.use("/vehicles", vehiclesRouter);  // Member B
-  // app.use("/drivers", driversRouter);    // Member B
-  // app.use("/maintenance", maintenanceRouter); // Member B
+  app.use("/vehicles", vehiclesRouter);
+  app.use("/drivers", driversRouter);
+  app.use("/maintenance", maintenanceRouter);
 
   // Fallback error handler
   app.use((err: any, _req: express.Request, res: express.Response, _next: express.NextFunction) => {

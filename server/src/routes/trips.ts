@@ -41,25 +41,6 @@ tripsRouter.get(
   }
 );
 
-// TEMP shim — remove once Member B ships real /vehicles and /drivers routes (see CLAUDE.md ownership)
-tripsRouter.get("/meta/vehicles", authenticate, async (_req, res) => {
-  const vehicles = await prisma.vehicle.findMany({
-    where: { status: "available" },
-    select: { id: true, registrationNumber: true, nameModel: true, maxLoadCapacityKg: true, status: true },
-    orderBy: { registrationNumber: "asc" },
-  });
-  res.json(vehicles);
-});
-
-// TEMP shim — remove once Member B ships real /vehicles and /drivers routes (see CLAUDE.md ownership)
-tripsRouter.get("/meta/drivers", authenticate, async (_req, res) => {
-  const drivers = await prisma.driver.findMany({
-    where: { status: "available" },
-    select: { id: true, name: true, licenseNumber: true, licenseExpiry: true, status: true },
-    orderBy: { name: "asc" },
-  });
-  res.json(drivers);
-});
 
 tripsRouter.get(
   "/:id",

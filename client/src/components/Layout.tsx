@@ -16,6 +16,7 @@ const NAV: NavItem[] = [
   { to: "/maintenance", label: "Maintenance", icon: "🔧", roles: ["fleet_manager"] },
   { to: "/fuel-expenses", label: "Fuel & Expenses", icon: "⛽", roles: ["financial_analyst", "fleet_manager"] },
   { to: "/reports", label: "Reports", icon: "📈" },
+  { to: "/settings", label: "Settings", icon: "⚙️", roles: ["fleet_manager"] },
 ];
 
 const roleLabels: Record<Role, string> = {
