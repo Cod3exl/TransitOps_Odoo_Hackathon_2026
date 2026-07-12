@@ -1,7 +1,7 @@
 import { useMemo, useState, type FormEvent } from "react";
 import { createFileRoute } from "@tanstack/react-router";
-import { ArrowRight, Check, OctagonX, Send } from "lucide-react";
-import { cn } from "@/lib/utils";
+import { ArrowRight, Check, OctagonX, Send, Download } from "lucide-react";
+import { cn, exportCsv } from "@/lib/utils";
 import { useVehicles, useDrivers, useTrips, useDispatchTrip, useCompleteTrip, useCancelTrip } from "@/lib/useApi";
 import { PageHeader, PrimaryButton, SecondaryButton } from "@/components/transit/PageHeader";
 import { StatusChip } from "@/components/transit/StatusChip";
@@ -64,6 +64,7 @@ function TripsPage() {
     driverId: "",
     cargoWeightKg: "",
     plannedDistanceKm: "",
+    revenue: "",
   });
 
   const availableVehicles = vehicles.filter((v) => v.status === "available");
@@ -105,8 +106,9 @@ function TripsPage() {
       driverId: form.driverId,
       cargoWeightKg: cargo,
       plannedDistanceKm: Number(form.plannedDistanceKm) || 0,
+      revenue: Number(form.revenue) || 0,
     }, {
-      onSuccess: () => setForm({ source: "", destination: "", vehicleId: "", driverId: "", cargoWeightKg: "", plannedDistanceKm: "" }),
+      onSuccess: () => setForm({ source: "", destination: "", vehicleId: "", driverId: "", cargoWeightKg: "", plannedDistanceKm: "", revenue: "" }),
     });
   };
 
@@ -114,7 +116,24 @@ function TripsPage() {
 
   return (
     <div>
-      <PageHeader title="Trip Dispatcher" subtitle="Create trips and monitor the live board" />
+      <PageHeader
+        title="Trip Dispatcher"
+        subtitle="Create trips and monitor the live board"
+        action={
+          <SecondaryButton
+            onClick={() => exportCsv(trips, "trips.csv", [
+              { key: "tripCode", label: "Trip Code" },
+              { key: "source", label: "Source" },
+              { key: "destination", label: "Destination" },
+              { key: "vehicleId", label: "Vehicle ID" },
+              { key: "driverId", label: "Driver ID" },
+              { key: "status", label: "Status" },
+            ])}
+          >
+            <Download className="size-4" /> Export CSV
+          </SecondaryButton>
+        }
+      />
 
       <div className="grid gap-4 lg:grid-cols-[minmax(0,11fr)_minmax(0,9fr)]">
         {/* Create Trip */}
@@ -127,11 +146,11 @@ function TripsPage() {
             <div className="grid gap-3 sm:grid-cols-2">
               <div>
                 <label className={labelCls}>Source</label>
-                <input className={inputCls} value={form.source} onChange={(e) => setForm({ ...form, source: e.target.value })} placeholder="Rotterdam Depot" />
+                <input className={inputCls} value={form.source} onChange={(e) => setForm({ ...form, source: e.target.value })} placeholder="Mumbai Depot" />
               </div>
               <div>
                 <label className={labelCls}>Destination</label>
-                <input className={inputCls} value={form.destination} onChange={(e) => setForm({ ...form, destination: e.target.value })} placeholder="Hamburg Hub" />
+                <input className={inputCls} value={form.destination} onChange={(e) => setForm({ ...form, destination: e.target.value })} placeholder="Delhi Hub" />
               </div>
             </div>
             <div className="grid gap-3 sm:grid-cols-2">
@@ -182,6 +201,17 @@ function TripsPage() {
                 </p>
               </div>
             )}
+
+            <div>
+              <label className={labelCls}>Expected Revenue (₹)</label>
+              <input
+                type="number"
+                className={inputCls}
+                value={form.revenue}
+                onChange={(e) => setForm({ ...form, revenue: e.target.value })}
+                placeholder="12000"
+              />
+            </div>
 
             <PrimaryButton type="submit" disabled={!canDispatch} className="w-full">
               <Send className="size-4" /> Dispatch Trip

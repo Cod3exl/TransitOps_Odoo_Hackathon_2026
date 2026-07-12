@@ -166,6 +166,7 @@ export function useDispatchTrip() {
       driverId: string;
       cargoWeightKg: number;
       plannedDistanceKm: number;
+      revenue: number;
     }) => api.post<ApiTrip>("/trips", body),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ["trips"] });
@@ -277,6 +278,7 @@ export function useAddExpense() {
       expenseType: string;
       expenseDate: string;
       tripId?: string;
+      notes?: string;
     }) => api.post<ApiExpense>("/expenses", body),
     onSuccess: () => qc.invalidateQueries({ queryKey: ["expenses"] }),
   });

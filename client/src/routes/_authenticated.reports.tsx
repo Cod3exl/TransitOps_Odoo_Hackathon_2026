@@ -1,5 +1,6 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { Download } from "lucide-react";
+import { exportCsv } from "@/lib/utils";
 import {
   BarChart,
   Bar,
@@ -12,6 +13,7 @@ import {
 import { useVehicleCosts, useMonthlyRevenue, useTopCostliest, useVehicles } from "@/lib/useApi";
 import { PageHeader, SecondaryButton } from "@/components/transit/PageHeader";
 import { KpiCard } from "@/components/transit/KpiCard";
+import { money } from "@/components/ui";
 import { PendingComponent } from "@/components/transit/PendingComponent";
 
 export const Route = createFileRoute("/_authenticated/reports")({
@@ -24,20 +26,7 @@ export const Route = createFileRoute("/_authenticated/reports")({
   component: ReportsPage,
 });
 
-function exportCsv(data: { month: string; revenue: number }[]) {
-  const rows = [
-    ["Month", "Revenue"],
-    ...data.map((m) => [m.month, String(m.revenue)]),
-  ];
-  const csv = rows.map((r) => r.join(",")).join("\n");
-  const blob = new Blob([csv], { type: "text/csv" });
-  const url = URL.createObjectURL(blob);
-  const a = document.createElement("a");
-  a.href = url;
-  a.download = "transitops-monthly-revenue.csv";
-  a.click();
-  URL.revokeObjectURL(url);
-}
+
 
 function ReportsPage() {
   const { data: vehicleCosts, isLoading: isCostsLoading } = useVehicleCosts();
@@ -76,7 +65,7 @@ function ReportsPage() {
         title="Reports & Analytics"
         subtitle="Read-only fleet performance overview"
         action={
-          <SecondaryButton onClick={() => exportCsv(mRevenue)}>
+          <SecondaryButton onClick={() => exportCsv(mRevenue, "transitops-monthly-revenue.csv")}>
             <Download className="size-4" /> Export CSV
           </SecondaryButton>
         }
@@ -85,11 +74,11 @@ function ReportsPage() {
       <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
         <KpiCard label="Fuel Efficiency" value={fuelEfficiency === "—" ? "—" : `${fuelEfficiency} km/l`} accent="green" trend="up" context="Fleet average" />
         <KpiCard label="Fleet Utilization" value={`${utilization}%`} accent="blue" trend="up" context="Current active dispatch" />
-        <KpiCard label="Operational Cost" value={`$${Math.round(operationalCost).toLocaleString()}`} accent="amber" trend="down" context="fuel + maintenance + expenses" />
+        <KpiCard label="Operational Cost" value={money(operationalCost)} accent="amber" trend="down" context="fuel + maintenance + expenses" />
         <KpiCard label="Vehicle ROI" value={`${roi}%`} accent="gray" trend="up" context="lifetime">
-          <p className="mt-2 text-[10px] leading-snug text-muted-foreground">
+          <div className="mt-2 text-xs text-slate-500">
             ROI = (Revenue − Operational Cost) / Acquisition Cost
-          </p>
+          </div>
         </KpiCard>
       </div>
 
@@ -100,16 +89,15 @@ function ReportsPage() {
             <ResponsiveContainer width="100%" height="100%">
               <BarChart data={mRevenue} margin={{ top: 4, right: 4, left: -12, bottom: 0 }}>
                 <CartesianGrid strokeDasharray="3 3" stroke="var(--border)" vertical={false} />
-                <XAxis dataKey="month" tick={{ fontSize: 11 }} axisLine={false} tickLine={false} />
-                <YAxis
-                  tick={{ fontSize: 11 }}
-                  axisLine={false}
-                  tickLine={false}
-                  tickFormatter={(v: number) => `$${Math.round(v / 1000)}k`}
+                <XAxis dataKey="month" fontSize={12} tickLine={false} axisLine={false} stroke="oklch(0.5 0.05 250)" />
+                <YAxis 
+                  fontSize={12} tickLine={false} axisLine={false} stroke="oklch(0.5 0.05 250)" 
+                  tickFormatter={(v: number) => `${Math.round(v / 1000)}k`} 
                 />
-                <Tooltip
-                  formatter={(v) => [`$${Number(v).toLocaleString()}`, "Revenue"]}
-                  contentStyle={{ borderRadius: 8, border: "1px solid var(--border)", fontSize: 12 }}
+                <Tooltip 
+                  formatter={(v) => [money(Number(v)), "Revenue"]} 
+                  labelStyle={{ color: "black", fontWeight: 600 }}
+                  itemStyle={{ color: "oklch(0.55 0.16 260)", fontWeight: 500 }}
                 />
                 <Bar dataKey="revenue" fill="var(--primary)" radius={[3, 3, 0, 0]} />
               </BarChart>
@@ -129,12 +117,9 @@ function ReportsPage() {
                 const hue = 25 + i * 12;
                 return (
                   <li key={c.id}>
-                    <div className="mb-1 flex items-baseline justify-between gap-2 text-sm">
-                      <span className="font-medium">
-                        {c.nameModel}{" "}
-                        <span className="font-mono text-xs text-muted-foreground">{c.registrationNumber}</span>
-                      </span>
-                      <span className="font-semibold tabular-nums">${Math.round(c.operationalCost || 0).toLocaleString()}</span>
+                    <div className="flex items-center justify-between mb-1">
+                      <span className="font-medium text-sm">{c.nameModel} <span className="text-slate-400 font-normal">({c.registration})</span></span>
+                      <span className="font-semibold tabular-nums">{money(c.operationalCost || 0)}</span>
                     </div>
                     <div className="h-2 overflow-hidden rounded-full bg-secondary">
                       <div

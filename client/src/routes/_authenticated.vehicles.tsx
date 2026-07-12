@@ -1,10 +1,12 @@
 import { useMemo, useState, type FormEvent } from "react";
 import { createFileRoute } from "@tanstack/react-router";
-import { AlertCircle, Plus, Truck } from "lucide-react";
+import { AlertCircle, Plus, Truck, Download } from "lucide-react";
+import { exportCsv } from "@/lib/utils";
 import { useVehicles, useAddVehicle } from "@/lib/useApi";
 import type { Vehicle } from "@/lib/transit/types";
 import { PageHeader, PrimaryButton } from "@/components/transit/PageHeader";
 import { StatusChip } from "@/components/transit/StatusChip";
+import { money } from "@/components/ui";
 import { TableCard, Th, Td, Tr } from "@/components/transit/DataTable";
 import { RuleNote } from "@/components/transit/RuleNote";
 import { SlideOver } from "@/components/transit/SlideOver";
@@ -31,6 +33,7 @@ function VehiclesPage() {
   const [search, setSearch] = useState("");
   const [typeFilter, setTypeFilter] = useState("all");
   const [statusFilter, setStatusFilter] = useState("all");
+  const [sortBy, setSortBy] = useState("none");
   const [drawerOpen, setDrawerOpen] = useState(false);
 
   const [form, setForm] = useState({
@@ -39,7 +42,7 @@ function VehiclesPage() {
     type: "Truck" as Vehicle["type"],
     maxCapacityKg: "",
     odometerKm: "",
-    acquisitionCost: "",
+    cost: "",
     region: "North" as Vehicle["region"],
   });
 
@@ -47,16 +50,24 @@ function VehiclesPage() {
     (v) => v.registration.toLowerCase() === form.registration.trim().toLowerCase(),
   );
 
-  const filtered = useMemo(
-    () =>
-      vehicles.filter(
-        (v) =>
-          v.registration.toLowerCase().includes(search.toLowerCase()) &&
-          (typeFilter === "all" || v.type === typeFilter) &&
-          (statusFilter === "all" || v.status === statusFilter),
-      ),
-    [vehicles, search, typeFilter, statusFilter],
-  );
+  const filtered = useMemo(() => {
+    let result = vehicles.filter(
+      (v) =>
+        v.registration.toLowerCase().includes(search.toLowerCase()) &&
+        (typeFilter === "all" || v.type === typeFilter) &&
+        (statusFilter === "all" || v.status === statusFilter),
+    );
+
+    if (sortBy === "capacityDesc") {
+      result = result.sort((a, b) => b.maxCapacityKg - a.maxCapacityKg);
+    } else if (sortBy === "odometerDesc") {
+      result = result.sort((a, b) => b.odometerKm - a.odometerKm);
+    } else if (sortBy === "costDesc") {
+      result = result.sort((a, b) => b.acquisitionCost - a.acquisitionCost);
+    }
+
+    return result;
+  }, [vehicles, search, typeFilter, statusFilter, sortBy]);
 
   const handleSubmit = (e: FormEvent) => {
     e.preventDefault();
@@ -67,12 +78,12 @@ function VehiclesPage() {
       type: form.type,
       maxLoadCapacityKg: Number(form.maxCapacityKg) || 0,
       odometerKm: Number(form.odometerKm) || 0,
-      acquisitionCost: Number(form.acquisitionCost) || 0,
+      acquisitionCost: Number(form.cost) || 0,
       region: form.region,
     }, {
       onSuccess: () => {
         setDrawerOpen(false);
-        setForm({ registration: "", name: "", type: "Truck", maxCapacityKg: "", odometerKm: "", acquisitionCost: "", region: "North" });
+        setForm({ registration: "", name: "", type: "Truck", maxCapacityKg: "", odometerKm: "", cost: "", region: "North" });
       },
     });
   };
@@ -108,9 +119,29 @@ function VehiclesPage() {
               <option value="in_shop">In Shop</option>
               <option value="retired">Retired</option>
             </select>
+            <select className={select} value={sortBy} onChange={(e) => setSortBy(e.target.value)}>
+              <option value="none">Sort by</option>
+              <option value="capacityDesc">Capacity (High to Low)</option>
+              <option value="odometerDesc">Odometer (High to Low)</option>
+              <option value="costDesc">Cost (High to Low)</option>
+            </select>
             <PrimaryButton onClick={() => setDrawerOpen(true)}>
               <Plus className="size-4" /> Add Vehicle
             </PrimaryButton>
+            <button
+              onClick={() => exportCsv(filtered, "vehicles.csv", [
+                { key: "registration", label: "Registration" },
+                { key: "name", label: "Name" },
+                { key: "type", label: "Type" },
+                { key: "maxCapacityKg", label: "Max Capacity (kg)" },
+                { key: "odometerKm", label: "Odometer (km)" },
+                { key: "status", label: "Status" },
+              ])}
+              title="Export CSV"
+              className="flex h-9 items-center justify-center rounded-md border bg-card px-3 hover:bg-secondary text-sm font-medium transition-colors"
+            >
+              <Download className="size-4" />
+            </button>
           </div>
         }
       />
@@ -152,7 +183,7 @@ function VehiclesPage() {
                   <Td className="text-muted-foreground">{v.type}</Td>
                   <Td numeric>{v.maxCapacityKg.toLocaleString()} kg</Td>
                   <Td numeric>{v.odometerKm.toLocaleString()} km</Td>
-                  <Td numeric>${v.acquisitionCost.toLocaleString()}</Td>
+                  <Td numeric>{money(v.acquisitionCost)}</Td>
                   <Td><StatusChip status={v.status} /></Td>
                 </Tr>
               ))}
@@ -210,8 +241,8 @@ function VehiclesPage() {
             <input type="number" className={inputCls} value={form.odometerKm} onChange={(e) => setForm({ ...form, odometerKm: e.target.value })} placeholder="0" />
           </div>
           <div>
-            <label className={labelCls}>Acquisition Cost ($)</label>
-            <input type="number" className={inputCls} value={form.acquisitionCost} onChange={(e) => setForm({ ...form, acquisitionCost: e.target.value })} placeholder="120000" />
+            <label className={labelCls}>Acquisition Cost</label>
+            <input type="number" className={inputCls} value={form.cost} onChange={(e) => setForm({ ...form, cost: e.target.value })} placeholder="45000" />
           </div>
           <PrimaryButton type="submit" disabled={duplicate || !form.registration.trim() || !form.name.trim()} className="w-full">
             Save Vehicle

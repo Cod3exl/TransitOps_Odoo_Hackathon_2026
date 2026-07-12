@@ -1,0 +1,56 @@
+<h2 class="sr-only">Revised hour-by-hour task and commit grid for three team members building TransitOps with a custom Express and Postgres backend instead of a backend-as-a-service platform</h2>
+<div style="display:flex;gap:16px;margin-bottom:14px;flex-wrap:wrap">
+  <div style="display:flex;align-items:center;gap:6px;font-size:12px;color:var(--text-secondary)"><span style="width:10px;height:10px;border-radius:3px;background:#7F77DD"></span>Member A — infra, auth, trips/dispatch</div>
+  <div style="display:flex;align-items:center;gap:6px;font-size:12px;color:var(--text-secondary)"><span style="width:10px;height:10px;border-radius:3px;background:#1D9E75"></span>Member B — vehicles, drivers, maintenance, settings</div>
+  <div style="display:flex;align-items:center;gap:6px;font-size:12px;color:var(--text-secondary)"><span style="width:10px;height:10px;border-radius:3px;background:#D85A30"></span>Member C — dashboard, fuel & expenses, reports</div>
+</div>
+<div style="overflow-x:auto">
+<div style="display:grid;grid-template-columns:150px repeat(8,minmax(100px,1fr));gap:5px;min-width:920px">
+  <div></div>
+  <div style="font-size:11px;color:var(--text-muted);text-align:center;padding:4px 0">Hour 1</div>
+  <div style="font-size:11px;color:var(--text-muted);text-align:center;padding:4px 0">Hour 2</div>
+  <div style="font-size:11px;color:var(--text-muted);text-align:center;padding:4px 0">Hour 3</div>
+  <div style="font-size:11px;color:var(--text-muted);text-align:center;padding:4px 0">Hour 4</div>
+  <div style="font-size:11px;color:var(--text-muted);text-align:center;padding:4px 0">Hour 5</div>
+  <div style="font-size:11px;color:var(--text-muted);text-align:center;padding:4px 0">Hour 6</div>
+  <div style="font-size:11px;color:var(--text-muted);text-align:center;padding:4px 0">Hour 7</div>
+  <div style="font-size:11px;color:var(--text-muted);text-align:center;padding:4px 0">Hour 8</div>
+
+  <div style="display:flex;align-items:center;padding:6px 8px;border-radius:8px;background:var(--surface-1);font-size:13px;font-weight:500;color:var(--text-primary);border-left:3px solid #534AB7">Member A</div>
+  <div class="cell" style="border-top-color:#534AB7">Server + Prisma + auth + seed</div>
+  <div class="cell" style="border-top-color:#534AB7">Trip service + routes</div>
+  <div class="cell" style="border-top-color:#534AB7">Dispatcher UI</div>
+  <div class="cell" style="border-top-color:#534AB7">Dispatch validation + completion</div>
+  <div class="cell" style="border-top-color:#534AB7">CSV export + deploy scaffold</div>
+  <div class="cell" style="border-top-color:#534AB7">RBAC enforcement pass</div>
+  <div class="cell" style="border-top-color:#534AB7">Production deploy</div>
+  <div class="cell" style="border-top-color:#534AB7">Rule test pass</div>
+
+  <div style="display:flex;align-items:center;padding:6px 8px;border-radius:8px;background:var(--surface-1);font-size:13px;font-weight:500;color:var(--text-primary);border-left:3px solid #1D9E75">Member B</div>
+  <div class="cell" style="border-top-color:#1D9E75">Frontend scaffold + UI kit</div>
+  <div class="cell" style="border-top-color:#1D9E75">Vehicle registry</div>
+  <div class="cell" style="border-top-color:#1D9E75">Driver management</div>
+  <div class="cell" style="border-top-color:#1D9E75">Maintenance workflow</div>
+  <div class="cell" style="border-top-color:#1D9E75">Settings + RBAC matrix UI</div>
+  <div class="cell" style="border-top-color:#1D9E75">Search + filter + sort</div>
+  <div class="cell" style="border-top-color:#1D9E75">Dark mode</div>
+  <div class="cell" style="border-top-color:#1D9E75">Loading + error states</div>
+
+  <div style="display:flex;align-items:center;padding:6px 8px;border-radius:8px;background:var(--surface-1);font-size:13px;font-weight:500;color:var(--text-primary);border-left:3px solid #D85A30">Member C</div>
+  <div class="cell" style="border-top-color:#D85A30">App shell + API client + auth ctx</div>
+  <div class="cell" style="border-top-color:#D85A30">Login UI + protected routes</div>
+  <div class="cell" style="border-top-color:#D85A30">Dashboard live KPIs</div>
+  <div class="cell" style="border-top-color:#D85A30">Dashboard filters + recent trips</div>
+  <div class="cell" style="border-top-color:#D85A30">Fuel & expense tracking</div>
+  <div class="cell" style="border-top-color:#D85A30">Reports & analytics</div>
+  <div class="cell" style="border-top-color:#D85A30">Responsive + states</div>
+  <div class="cell" style="border-top-color:#D85A30">Demo data + README</div>
+</div>
+</div>
+<div style="display:flex;align-items:center;gap:6px;margin-top:12px;font-size:12px;color:var(--text-muted)">
+  <i class="ti ti-git-commit" style="font-size:14px" aria-hidden="true"></i>
+  Vertical slices per person — different route files and different page folders, so nothing to conflict on
+</div>
+<style>
+.cell{border-radius:8px;border:1px solid var(--border);border-top:3px solid;background:var(--surface-1);padding:8px;font-size:12px;color:var(--text-primary);line-height:1.3;min-height:52px;display:flex;align-items:center}
+</style>

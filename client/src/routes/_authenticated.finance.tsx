@@ -4,6 +4,7 @@ import { Plus } from "lucide-react";
 import { useVehicles, useTrips, useFuelLogs, useExpenses, useAddFuelLog, useAddExpense } from "@/lib/useApi";
 import { PageHeader, PrimaryButton, SecondaryButton } from "@/components/transit/PageHeader";
 import { StatusChip } from "@/components/transit/StatusChip";
+import { money } from "@/components/ui";
 import { TableCard, Th, Td, Tr } from "@/components/transit/DataTable";
 import { SlideOver } from "@/components/transit/SlideOver";
 import { PendingComponent } from "@/components/transit/PendingComponent";
@@ -34,7 +35,7 @@ function FinancePage() {
 
   const [drawer, setDrawer] = useState<"fuel" | "expense" | null>(null);
   const [fuelForm, setFuelForm] = useState({ vehicleId: "", date: today, liters: "", cost: "" });
-  const [expForm, setExpForm] = useState({ tripId: "", vehicleId: "", amount: "", expenseType: "Toll" });
+  const [expForm, setExpForm] = useState({ tripId: "", vehicleId: "", amount: "", expenseType: "Toll", notes: "" });
 
   const vehicleLabel = (id: string) => {
     const v = vehicles.find((v) => v.id === id);
@@ -70,10 +71,11 @@ function FinancePage() {
       expenseType: expForm.expenseType,
       expenseDate: new Date().toISOString(),
       tripId: expForm.tripId || undefined,
+      notes: expForm.notes.trim() || undefined,
     }, {
       onSuccess: () => {
         setDrawer(null);
-        setExpForm({ tripId: "", vehicleId: "", amount: "", expenseType: "Toll" });
+        setExpForm({ tripId: "", vehicleId: "", amount: "", expenseType: "Toll", notes: "" });
       },
     });
   };
@@ -115,7 +117,7 @@ function FinancePage() {
                   <Td className="font-medium">{f.vehicle?.nameModel ?? vehicleLabel(f.vehicleId)}</Td>
                   <Td className="text-muted-foreground">{f.logDate?.split("T")[0] ?? "—"}</Td>
                   <Td numeric>{f.liters.toLocaleString()} L</Td>
-                  <Td numeric>${f.cost.toLocaleString()}</Td>
+                  <Td numeric>{money(f.cost)}</Td>
                 </Tr>
               ))}
             </tbody>
@@ -131,6 +133,7 @@ function FinancePage() {
                 <Th>Vehicle</Th>
                 <Th>Type</Th>
                 <Th>Date</Th>
+                <Th>Notes</Th>
                 <Th numeric>Amount</Th>
                 <Th>Status</Th>
               </tr>
@@ -142,7 +145,8 @@ function FinancePage() {
                   <Td className="font-medium">{e.vehicle?.nameModel ?? vehicleLabel(e.vehicleId)}</Td>
                   <Td className="text-muted-foreground">{e.expenseType}</Td>
                   <Td className="text-muted-foreground">{e.expenseDate?.split("T")[0] ?? "—"}</Td>
-                  <Td numeric className="font-semibold">${e.amount.toLocaleString()}</Td>
+                  <Td className="text-muted-foreground text-xs max-w-[180px] truncate">{(e as any).notes || "—"}</Td>
+                  <Td numeric className="font-semibold">{money(e.amount)}</Td>
                   <Td><StatusChip status={e.status} /></Td>
                 </Tr>
               ))}
@@ -158,17 +162,17 @@ function FinancePage() {
                 Total Operational Cost = <span className="font-mono">Fuel + Expenses</span>
               </p>
               <p className="mt-1 text-3xl font-bold tabular-nums text-status-amber">
-                ${totalOperational.toLocaleString()}
+                {money(totalOperational)}
               </p>
             </div>
             <div className="flex gap-6 text-sm">
               <div>
                 <p className="text-xs text-muted-foreground">Fuel</p>
-                <p className="font-semibold tabular-nums">${totalFuel.toLocaleString()}</p>
+                <p className="font-semibold tabular-nums">{money(totalFuel)}</p>
               </div>
               <div>
                 <p className="text-xs text-muted-foreground">Other Expenses</p>
-                <p className="font-semibold tabular-nums">${totalExpenses.toLocaleString()}</p>
+                <p className="font-semibold tabular-nums">{money(totalExpenses)}</p>
               </div>
             </div>
           </div>
@@ -196,7 +200,7 @@ function FinancePage() {
               <input type="number" className={inputCls} value={fuelForm.liters} onChange={(e) => setFuelForm({ ...fuelForm, liters: e.target.value })} placeholder="380" />
             </div>
             <div>
-              <label className={labelCls}>Cost ($)</label>
+              <label className={labelCls}>Cost</label>
               <input type="number" className={inputCls} value={fuelForm.cost} onChange={(e) => setFuelForm({ ...fuelForm, cost: e.target.value })} placeholder="646" />
             </div>
           </div>
@@ -237,8 +241,17 @@ function FinancePage() {
             </select>
           </div>
           <div>
-            <label className={labelCls}>Amount ($)</label>
+            <label className={labelCls}>Amount</label>
             <input type="number" className={inputCls} value={expForm.amount} onChange={(e) => setExpForm({ ...expForm, amount: e.target.value })} placeholder="86" />
+          </div>
+          <div>
+            <label className={labelCls}>Notes (optional)</label>
+            <textarea
+              className={`${inputCls} h-20 resize-none py-2`}
+              value={expForm.notes}
+              onChange={(e) => setExpForm({ ...expForm, notes: e.target.value })}
+              placeholder="e.g. NH-48 Toll Plaza, receipt #1234"
+            />
           </div>
           <PrimaryButton type="submit" disabled={!expForm.vehicleId || addExpenseMutation.isPending} className="w-full">
             {addExpenseMutation.isPending ? "Saving…" : "Save Expense"}

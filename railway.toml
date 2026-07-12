@@ -1,0 +1,28 @@
+[build]
+builder = "NIXPACKS"
+
+[build.nixpacksPlan.phases.setup]
+nixPkgs = ["nodejs"]
+
+[build.nixpacksPlan.phases.install]
+cmds = [
+  "cd server && npm install",
+  "cd client && npm install"
+]
+
+[build.nixpacksPlan.phases.build]
+cmds = [
+  "cd server && npx prisma generate && npx tsc",
+  "cd client && npm run build"
+]
+
+[deploy]
+startCommand = "cd server && npm start"
+healthcheckPath = "/api/settings"
+healthcheckTimeout = 100
+
+[env]
+PORT = "3000"
+NODE_ENV = "production"
+# DATABASE_URL is provided by the attached Postgres plugin in Railway
+# JWT_SECRET must be set manually in the Railway variables tab

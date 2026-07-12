@@ -150,8 +150,8 @@ model Expense {
 
 model SystemSettings {
   id           String   @id @default("default")
-  depotName    String   @default("Rotterdam Central Depot")
-  currency     String   @default("USD ($)")
+  depotName    String   @default("Mumbai Central Depot")
+  currency     String   @default("INR (₹)")
   distanceUnit String   @default("Kilometers")
   rbacConfig   Json?
   updatedAt    DateTime @updatedAt

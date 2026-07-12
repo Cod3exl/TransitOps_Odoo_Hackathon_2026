@@ -4,6 +4,7 @@ import { ArrowRight, Wrench } from "lucide-react";
 import { useVehicles, useMaintenance, useAddMaintenance, useCloseMaintenance } from "@/lib/useApi";
 import { PageHeader, PrimaryButton, SecondaryButton } from "@/components/transit/PageHeader";
 import { StatusChip } from "@/components/transit/StatusChip";
+import { money } from "@/components/ui";
 import { TableCard, Th, Td, Tr } from "@/components/transit/DataTable";
 import { EmptyState } from "@/components/transit/EmptyState";
 import { PendingComponent } from "@/components/transit/PendingComponent";
@@ -85,8 +86,8 @@ function MaintenancePage() {
               </div>
               <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <label className={labelCls}>Cost ($)</label>
-                  <input type="number" className={inputCls} value={form.cost} onChange={(e) => setForm({ ...form, cost: e.target.value })} placeholder="640" />
+                  <label className={labelCls}>Cost</label>
+                  <input type="number" className={inputCls} value={form.cost} onChange={(e) => setForm({ ...form, cost: e.target.value })} placeholder="2500" />
                 </div>
                 <div>
                   <label className={labelCls}>Date</label>
@@ -152,8 +153,8 @@ function MaintenancePage() {
                       <Td className="font-medium">{vehicleLabel(s.vehicleId)}</Td>
                       <Td>{s.serviceType}</Td>
                       <Td className="text-muted-foreground">{s.serviceDate?.split("T")[0] ?? "—"}</Td>
-                      <Td numeric>${s.cost.toLocaleString()}</Td>
-                      <Td><StatusChip status={s.status === "in_shop" ? "in_shop" : "available"} /></Td>
+                      <Td numeric>{money(s.cost)}</Td>
+                      <Td><StatusChip status={s.status} /></Td>
                       <Td>
                         {s.status === "in_shop" && (
                           <SecondaryButton onClick={() => closeMaintMutation.mutate(s.id)} className="h-7 px-2.5 text-xs">

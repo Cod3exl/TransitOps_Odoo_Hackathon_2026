@@ -107,6 +107,7 @@ function SettingsPage() {
             <div>
               <label className={labelCls}>Currency</label>
               <select className={inputCls} value={general.currency} onChange={(e) => setGeneral({ ...general, currency: e.target.value })}>
+                <option>INR (₹)</option>
                 <option>USD ($)</option>
                 <option>EUR (€)</option>
                 <option>GBP (£)</option>

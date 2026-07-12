@@ -13,6 +13,7 @@ const createTripSchema = z.object({
   driverId: z.string().min(1),
   cargoWeightKg: z.coerce.number().positive(),
   plannedDistanceKm: z.coerce.number().positive(),
+  revenue: z.coerce.number().nonnegative().optional(),
 });
 
 const updateTripSchema = createTripSchema.partial();

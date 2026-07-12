@@ -83,7 +83,7 @@ export function EmptyState({ message }: { message: string }) {
 }
 
 export function money(n: number) {
-  return new Intl.NumberFormat("en-US", { style: "currency", currency: "USD", maximumFractionDigits: 0 }).format(
+  return new Intl.NumberFormat("en-IN", { style: "currency", currency: "INR", maximumFractionDigits: 0 }).format(
     n,
   );
 }

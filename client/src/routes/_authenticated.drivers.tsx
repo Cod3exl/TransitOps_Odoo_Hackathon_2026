@@ -1,6 +1,7 @@
 import { useMemo, useState, type FormEvent } from "react";
 import { createFileRoute } from "@tanstack/react-router";
-import { AlertTriangle, Plus, Users } from "lucide-react";
+import { AlertTriangle, Plus, Users, Download } from "lucide-react";
+import { exportCsv } from "@/lib/utils";
 import { cn } from "@/lib/utils";
 import { useDrivers, useAddDriver } from "@/lib/useApi";
 import { PendingComponent } from "@/components/transit/PendingComponent";
@@ -56,6 +57,7 @@ function DriversPage() {
   const addDriverMutation = useAddDriver();
   const [filter, setFilter] = useState<DriverStatus | "all">("all");
   const [search, setSearch] = useState("");
+  const [sortBy, setSortBy] = useState("none");
   const [drawerOpen, setDrawerOpen] = useState(false);
   const [form, setForm] = useState({
     name: "",
@@ -65,15 +67,21 @@ function DriversPage() {
     contact: "",
   });
 
-  const filtered = useMemo(
-    () =>
-      drivers.filter(
-        (d) =>
-          (filter === "all" || d.status === filter) &&
-          d.name.toLowerCase().includes(search.toLowerCase()),
-      ),
-    [drivers, filter, search],
-  );
+  const filtered = useMemo(() => {
+    let result = drivers.filter(
+      (d) =>
+        (filter === "all" || d.status === filter) &&
+        d.name.toLowerCase().includes(search.toLowerCase()),
+    );
+    
+    if (sortBy === "complianceDesc") {
+      result = result.sort((a, b) => b.tripCompliance - a.tripCompliance);
+    } else if (sortBy === "safetyDesc") {
+      result = result.sort((a, b) => b.safetyScore - a.safetyScore);
+    }
+    
+    return result;
+  }, [drivers, filter, search, sortBy]);
 
   const handleSubmit = (e: FormEvent) => {
     e.preventDefault();
@@ -105,9 +113,35 @@ function DriversPage() {
         onSearch={setSearch}
         searchPlaceholder="Search drivers…"
         action={
-          <PrimaryButton onClick={() => setDrawerOpen(true)}>
-            <Plus className="size-4" /> Add Driver
-          </PrimaryButton>
+          <div className="flex items-center gap-2">
+            <select
+              className="h-9 rounded-md border bg-card px-2.5 text-sm outline-none focus:ring-2 focus:ring-ring"
+              value={sortBy}
+              onChange={(e) => setSortBy(e.target.value)}
+            >
+              <option value="none">Sort by</option>
+              <option value="complianceDesc">Compliance (High to Low)</option>
+              <option value="safetyDesc">Safety Score (High to Low)</option>
+            </select>
+            <PrimaryButton onClick={() => setDrawerOpen(true)}>
+              <Plus className="size-4" /> Add Driver
+            </PrimaryButton>
+            <button
+              onClick={() => exportCsv(filtered, "drivers.csv", [
+                { key: "name", label: "Name" },
+                { key: "licenseNumber", label: "License No." },
+                { key: "licenseCategory", label: "Category" },
+                { key: "licenseExpiry", label: "License Expiry" },
+                { key: "tripCompliance", label: "Compliance %" },
+                { key: "safetyScore", label: "Safety Score" },
+                { key: "status", label: "Status" },
+              ])}
+              title="Export CSV"
+              className="flex h-9 items-center justify-center rounded-md border bg-card px-3 hover:bg-secondary text-sm font-medium transition-colors"
+            >
+              <Download className="size-4" />
+            </button>
+          </div>
         }
       />
 
@@ -202,10 +236,11 @@ function DriversPage() {
             <div>
               <label className={labelCls}>Category</label>
               <select className={inputCls} value={form.licenseCategory} onChange={(e) => setForm({ ...form, licenseCategory: e.target.value })}>
-                <option>B</option>
-                <option>C</option>
-                <option>CE</option>
-                <option>D</option>
+                <option>LMV</option>
+                <option>HMV</option>
+                <option>HGMV</option>
+                <option>Transport</option>
+                <option>Non-Transport</option>
               </select>
             </div>
             <div>
@@ -214,8 +249,8 @@ function DriversPage() {
             </div>
           </div>
           <div>
-            <label className={labelCls}>Contact</label>
-            <input className={inputCls} value={form.contact} onChange={(e) => setForm({ ...form, contact: e.target.value })} placeholder="+1 555-0000" />
+            <label className={labelCls}>Contact Number (optional)</label>
+            <input className={inputCls} value={form.contact} onChange={(e) => setForm({ ...form, contact: e.target.value })} placeholder="+91 98765 43210" />
           </div>
           <PrimaryButton type="submit" disabled={!form.name.trim() || !form.licenseNumber.trim()} className="w-full">
             Save Driver

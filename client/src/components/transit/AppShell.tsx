@@ -1,6 +1,6 @@
 import { Link, useRouterState } from "@tanstack/react-router";
-import { LogOut } from "lucide-react";
-import { cn } from "@/lib/utils";
+import { LogOut, Moon, Sun } from "lucide-react";
+import { cn, useTheme } from "@/lib/utils";
 import { navForRole, ROLE_LABELS } from "@/lib/transit/rbac";
 import { useSession } from "@/lib/transit/session";
 import { useSettings } from "@/lib/useApi";
@@ -10,6 +10,7 @@ import type { ReactNode } from "react";
 export function AppShell({ children }: { children: ReactNode }) {
   const { session, signOut } = useSession();
   const { data: settingsData } = useSettings();
+  const { dark, toggle: toggleDark } = useTheme();
   const pathname = useRouterState({ select: (s) => s.location.pathname });
 
   if (!session) return null;
@@ -60,6 +61,13 @@ export function AppShell({ children }: { children: ReactNode }) {
               </span>
             </div>
             <button
+              onClick={toggleDark}
+              title="Toggle theme"
+              className="hidden rounded-md p-1.5 text-sidebar-foreground/60 hover:bg-sidebar-accent hover:text-sidebar-accent-foreground lg:block"
+            >
+              {dark ? <Sun className="size-4" /> : <Moon className="size-4" />}
+            </button>
+            <button
               onClick={signOut}
               title="Sign out"
               className="hidden rounded-md p-1.5 text-sidebar-foreground/60 hover:bg-sidebar-accent hover:text-sidebar-accent-foreground lg:block"
@@ -67,13 +75,22 @@ export function AppShell({ children }: { children: ReactNode }) {
               <LogOut className="size-4" />
             </button>
           </div>
-          <button
-            onClick={signOut}
-            title="Sign out"
-            className="mt-2 grid w-full place-items-center rounded-md p-1.5 text-sidebar-foreground/60 hover:bg-sidebar-accent lg:hidden"
-          >
-            <LogOut className="size-4" />
-          </button>
+          <div className="mt-2 flex gap-2 lg:hidden">
+            <button
+              onClick={toggleDark}
+              title="Toggle theme"
+              className="grid flex-1 place-items-center rounded-md p-1.5 text-sidebar-foreground/60 hover:bg-sidebar-accent"
+            >
+              {dark ? <Sun className="size-4" /> : <Moon className="size-4" />}
+            </button>
+            <button
+              onClick={signOut}
+              title="Sign out"
+              className="grid flex-1 place-items-center rounded-md p-1.5 text-sidebar-foreground/60 hover:bg-sidebar-accent"
+            >
+              <LogOut className="size-4" />
+            </button>
+          </div>
         </div>
       </aside>
       <main className="min-w-0 flex-1 px-4 py-6 sm:px-6 lg:px-8">{children}</main>
