@@ -1,81 +1,134 @@
-# TransitOps — Fleet Operations Console
+# 🚚 TransitOps — Smart Transport Operations Platform
 
-currently pushing on branches: member-a, member-b and member-c.
+<div align="center">
+  <img src="./dashboard.png" alt="TransitOps Dashboard" width="800" />
+</div>
 
-Fleet management for the Odoo Hackathon 2026. Node/Express + PostgreSQL + Prisma + JWT backend, Vite + React 19 + Tailwind v4 frontend.
+<br />
 
-## Repo layout
+**TransitOps** is an end-to-end transport operations platform that digitizes vehicle, driver, dispatch, maintenance, and expense management while enforcing strict business rules and providing real-time operational insights. Built for the **Odoo Hackathon 2026**.
 
-```
-server/   Express + Prisma API
-client/   Vite + React SPA
-```
+## 📖 Description
 
-## Prerequisites
+Many logistics companies still rely on spreadsheets and manual logbooks to manage their transport operations. This leads to scheduling conflicts, underutilized vehicles, missed maintenance, and poor operational visibility. 
 
-- Node 20+
-- A PostgreSQL database (local, or a hosted URL from Railway/Render/Neon)
+TransitOps solves this by providing a centralized platform that manages the complete lifecycle of transport operations—from vehicle registration and driver management to dispatching, maintenance, fuel logging, and analytics. It enforces mandatory business rules automatically so that dispatchers cannot assign suspended drivers or vehicles currently in the shop.
 
-## Setup
+---
 
-### 1. Server
+## 📸 Application Flow & Features
 
+<details open>
+<summary><b>1. Vehicle Registry</b></summary>
+<br/>
+<img src="./vehicles.png" width="800" />
+Maintain a master list of all fleet assets, track their active status, odometer readings, and payload capacities.
+</details>
+
+<details open>
+<summary><b>2. Driver Management</b></summary>
+<br/>
+<img src="./drivers.png" width="800" />
+Track driver certifications, safety scores, and ensure dispatchers cannot assign suspended drivers or drivers with expired licenses.
+</details>
+
+<details open>
+<summary><b>3. Trip Dispatching</b></summary>
+<br/>
+<img src="./trips.png" width="800" />
+Safely dispatch trips validating payload capacities, driver statuses, and vehicle availability.
+</details>
+
+<details open>
+<summary><b>4. Maintenance Workflow</b></summary>
+<br/>
+<img src="./maintenance.png" width="800" />
+Log maintenance records and automatically mark vehicles as "In Shop" to prevent unsafe dispatching.
+</details>
+
+<details open>
+<summary><b>5. Fuel & Expenses</b></summary>
+<br/>
+<img src="./finance.png" width="800" />
+Track fuel consumption and operational costs with automated calculations.
+</details>
+
+<details open>
+<summary><b>6. Reports & Analytics</b></summary>
+<br/>
+<img src="./reports.png" width="800" />
+View Fleet Utilization, Fuel Efficiency, and per-vehicle ROI calculations across your whole fleet.
+</details>
+
+---
+
+## 🧪 Proper Test Workflow (End-to-End Pointers)
+
+To fully verify the enforcement of our mandatory business rules, follow this example workflow from the frontend interface:
+
+### Part 1: Registration & Validation
+- **Pointer 1:** Log in as **Fleet Manager** and navigate to the **Vehicles** tab. Add a new Vehicle (e.g., `Van-05`) with a maximum capacity of `500 kg`. Verify it appears with an `Available` status.
+- **Pointer 2:** Navigate to the **Drivers** tab as a **Safety Officer**. Register a driver (e.g., `Alex`) with a valid driving license.
+- **Pointer 3:** Navigate to **Trips** as a **Dispatcher**. Try to create a trip for `Van-05` and `Alex` with a Cargo Weight of `600 kg`. The system will block you (capacity rule). 
+
+### Part 2: The Dispatch Lifecycle
+- **Pointer 4:** Correct the Cargo Weight to `450 kg` (≤ 500 kg) and create the trip. 
+- **Pointer 5:** Dispatch the trip. Notice that the system automatically changes both `Van-05` and `Alex`'s status to **`On Trip`** globally.
+- **Pointer 6:** Try to create a *new* trip while they are dispatched. Notice that neither `Van-05` nor `Alex` appear in the selection dropdowns.
+- **Pointer 7:** Complete the trip, entering the final odometer reading and fuel consumed. The system will mark both entities back to **`Available`**.
+
+### Part 3: Maintenance & Finance
+- **Pointer 8:** Log in as **Fleet Manager** and open **Maintenance**. Create an Oil Change record for `Van-05`. Observe that its status instantly updates to **`In Shop`** and it is hidden from the dispatcher.
+- **Pointer 9:** Log in as **Financial Analyst** and visit **Reports**. See the operational costs and fuel efficiency dynamically updated based on the completed trip and maintenance log.
+
+---
+
+## 🚀 How to Run Locally
+
+### Prerequisites
+- Node.js 20+
+- A PostgreSQL database (local or hosted, e.g., Railway/Render/Neon)
+
+### 1. Start the Backend (API)
 ```bash
 cd server
 npm install
-cp .env.example .env          # then set DATABASE_URL + JWT_SECRET
+
+# Set up your environment variables
+cp .env.example .env 
+# Edit .env and ensure DATABASE_URL and JWT_SECRET are set
+
+# Initialize DB schema and seed demo data
 npx prisma migrate dev --name init
-npm run seed                  # loads demo fleet + 4 role accounts
-npm run dev                   # → http://localhost:4000
+npm run seed
+
+# Start the Express server
+npm run dev
+# The server will run at http://localhost:4000
 ```
 
-### 2. Client
-
+### 2. Start the Frontend (Client)
 ```bash
 cd client
 npm install
-npm run dev                   # → http://localhost:5173
+
+# Start the Vite development server
+npm run dev
+# The UI will run at http://localhost:5173
 ```
+> **Note:** The Vite dev server proxies `/api/*` to the backend on port 4000 automatically.
 
-The Vite dev server proxies `/api/*` to the backend on port 4000, so no client env is needed for local dev. For a deployed build set `VITE_API_URL` to the API's base URL.
+### 3. Demo Accounts
+Use password **`demo1234`** for all accounts:
+- **Fleet Manager:** `manager@transitops.dev`
+- **Dispatcher:** `dispatcher@transitops.dev`
+- **Safety Officer:** `safety@transitops.dev`
+- **Financial Analyst:** `finance@transitops.dev`
 
-## Demo accounts (password `demo1234`)
+---
 
-| Role | Email |
-|---|---|
-| Fleet Manager | manager@transitops.dev |
-| Dispatcher | dispatcher@transitops.dev |
-| Safety Officer | safety@transitops.dev |
-| Financial Analyst | finance@transitops.dev |
-
-The login screen has one-click buttons that fill these in.
-
-## Member C surface (Dashboard, Fuel & Expenses, Reports)
-
-**Backend routes**
-- `GET /dashboard` — KPI cards, trips-by-status, recent trips. Filters: `?type=&status=&region=`
-- `GET /dashboard/filters` — distinct filter values
-- `GET /fuel-logs`, `POST /fuel-logs` — fuel logging (analyst / manager write)
-- `GET /expenses`, `POST /expenses` — expense logging (analyst / manager write)
-- `GET /operational-cost` — fuel + expense totals per vehicle
-- `GET /reports/vehicle-costs` — per-vehicle fuel efficiency, op cost, ROI
-- `GET /reports/monthly-revenue` — revenue grouped by month
-- `GET /reports/top-costliest?limit=5` — costliest vehicles
-
-**Frontend pages** — `/dashboard`, `/fuel-expenses`, `/reports` (Recharts).
-
-## Demo script
-
-1. **Sign in** as Fleet Manager — land on the Dashboard. Point out live KPIs (total revenue, active trips, fleet/driver availability) and the trips-by-status row.
-2. **Filter** the Dashboard by region `West` / type `truck` — KPIs and Recent Trips update live (TanStack Query, no reload).
-3. Open **Reports** — Monthly Revenue line chart, Top 5 Costliest Vehicles bar chart, and the per-vehicle ROI / fuel-efficiency table. Highlight that ROI turns red when a vehicle is underwater.
-4. Sign in as **Financial Analyst**, open **Fuel & Expenses** — log a fuel entry and an expense; the Operational Cost table and the Reports numbers update immediately.
-5. (Team) Run the **Van-05 / Alex dispatch → complete** chain from the Dispatch board (trip `T-1006` is seeded in draft) to show the status machine end to end.
-
-## Team ownership
-
-- **Member A** — infra, auth, trips/dispatch
-- **Member B** — vehicles, drivers, maintenance, settings
-- **Member C** — dashboard, fuel & expenses, reports *(this slice)*
-
-See `TransitOps_Hackathon_Plan_NoBaaS.md` for the full plan.
+## 🛠️ Tech Stack
+- **Frontend:** React 19, Vite, Tailwind CSS v4, shadcn/ui, Recharts
+- **Backend:** Node.js, Express, Prisma ORM
+- **Database:** PostgreSQL
+- **Language:** TypeScript
